@@ -1,0 +1,8 @@
+name: 'Program Scheduling'
+type: module
+description: 'Provides schedule management for TV programs.'
+core_version_requirement: ^10
+package: Custom
+dependencies:
+  - drupal:views
+  - drupal:field

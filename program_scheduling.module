@@ -1,0 +1,168 @@
+<?php
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\program_scheduling\Service\ScheduleManager;
+
+/**
+ * Implements hook_help().
+ */
+function program_scheduling_help($route_name, RouteMatchInterface $route_match) {
+  if ($route_name === 'help.page.program_scheduling') {
+    return '<p>' . t('Provides schedule management for TV programs.') . '</p>';
+  }
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function program_scheduling_entity_insert(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() === 'schedule') {
+    $schedule_manager = \Drupal::service('program_scheduling.schedule_manager');
+    $schedule_manager->checkConflicts($entity);
+    $schedule_manager->sendNotification(t('A new schedule has been created.'));
+  }
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function program_scheduling_entity_update(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() === 'schedule') {
+    $schedule_manager = \Drupal::service('program_scheduling.schedule_manager');
+    $schedule_manager->checkConflicts($entity);
+    $schedule_manager->sendNotification(t('A schedule has been updated.'));
+  }
+}
+
+/**
+ * Implements hook_cron().
+ */
+function program_scheduling_cron() {
+  $schedule_manager = \Drupal::service('program_scheduling.schedule_manager');
+  $schedule_manager->logMessage('Running scheduled tasks for program scheduling.');
+  // Add logic to check for conflicts and send notifications.
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function program_scheduling_form_alter(array &$form, FormStateInterface $form_state, string $form_id) {
+  if ($form_id === 'schedule_form') {
+    $form['#validate'][] = 'program_scheduling_custom_validate';
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function program_scheduling_permission() {
+  return [
+    'administer program scheduling' => [
+      'title' => t('Administer program scheduling'),
+      'description' => t('Manage and administer program schedules.'),
+    ],
+  ];
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for block templates.
+ */
+function program_scheduling_preprocess_block(array &$variables) {
+  if ($variables['elements']['#id'] === 'block-program-scheduling') {
+    $variables['custom_message'] = t('Welcome to the Program Scheduling block!');
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function program_scheduling_theme() {
+  return [
+    'program_scheduling_calendar' => [
+      'variables' => ['schedules' => NULL],
+      'template' => 'program-scheduling-calendar',
+    ],
+  ];
+}
+
+/**
+ * Custom function to render a calendar view.
+ */
+function program_scheduling_render_calendar(array $schedules) {
+  return [
+    '#theme' => 'program_scheduling_calendar',
+    '#schedules' => $schedules,
+  ];
+}
+
+/**
+ * Implements hook_views_data().
+ */
+function program_scheduling_views_data() {
+  $data = [];
+
+  $data['schedule']['table']['group'] = t('Program Scheduling');
+  $data['schedule']['table']['base'] = [
+    'field' => 'id',
+    'title' => t('Schedule'),
+    'help' => t('The schedule ID.'),
+  ];
+
+  return $data;
+}
+
+/**
+ * Implements hook_entity_delete().
+ */
+function program_scheduling_entity_delete(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() === 'schedule') {
+    $schedule_manager = \Drupal::service('program_scheduling.schedule_manager');
+    $schedule_manager->sendNotification(t('A schedule has been deleted.'));
+  }
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function program_scheduling_block_info() {
+  return [
+    'program_scheduling_overview' => [
+      'info' => t('Program Scheduling Overview'),
+      'cache' => DRUPAL_NO_CACHE,
+    ],
+  ];
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function program_scheduling_block_view(string $delta = '') {
+  $block = [];
+
+  if ($delta === 'program_scheduling_overview') {
+    $block['subject'] = t('Program Scheduling Overview');
+    $block['content'] = program_scheduling_get_overview_content();
+  }
+
+  return $block;
+}
+
+/**
+ * Custom function to get overview content for the block.
+ */
+function program_scheduling_get_overview_content() {
+  return [
+    '#markup' => t('This is an overview of the current program schedules.'),
+  ];
+}
+
+/**
+ * Implements hook_field_widget_form_alter().
+ */
+function program_scheduling_field_widget_form_alter(array &$element, array &$form, FormStateInterface $form_state, array $context) {
+  if ($context['field']['field_name'] === 'field_schedule_date') {
+    $element['#description'] = t('Please select a valid date for the schedule.');
+  }
+}
