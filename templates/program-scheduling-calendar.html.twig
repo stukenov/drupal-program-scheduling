@@ -1,0 +1,20 @@
+{#
+/**
+ * @file
+ * Program schedule calendar.
+ *
+ * Available variables:
+ * - schedules: list of schedule entities.
+ */
+#}
+<div class="program-scheduling-calendar">
+  {% if schedules %}
+    <ul>
+      {% for schedule in schedules %}
+        <li>{{ schedule.label }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>{{ 'No schedules yet.'|t }}</p>
+  {% endif %}
+</div>

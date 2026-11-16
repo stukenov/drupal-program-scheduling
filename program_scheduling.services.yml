@@ -1,0 +1,7 @@
+services:
+  logger.channel.program_scheduling:
+    parent: logger.channel_base
+    arguments: ['program_scheduling']
+  program_scheduling.schedule_manager:
+    class: Drupal\program_scheduling\Service\ScheduleManager
+    arguments: ['@messenger', '@logger.channel.program_scheduling']
